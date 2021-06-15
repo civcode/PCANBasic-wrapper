@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <iostream>
+#include <map>
 #include <thread>
 #include <chrono>
 
@@ -31,6 +32,7 @@ bool PCANBasicWrapper::InitializeByUsbBus(int pcan_usb_bus, int pcan_baud_rate) 
     if (result != PCAN_ERROR_OK) {
         // An error occurred, get a text describing the error and show it
         CAN_GetErrorText(result, 0, strMsg);
+        cout << "PCAN-USB " << GetUsbBusNumber(pcan_usb_bus) << " could not be initialized" << endl;
         cout << strMsg << endl;
         return false;
     } else {
@@ -41,27 +43,68 @@ bool PCANBasicWrapper::InitializeByUsbBus(int pcan_usb_bus, int pcan_baud_rate) 
     // Read all buffered messages from other USB2CAN Dongles
     PurgeExternalFrameBuffer();
 
-	// Clear receive and transmit buffer
-	result = CAN_Reset(pcan_usb_bus);
-	if(result != PCAN_ERROR_OK)
-	{
-		// An error occurred, get a text describing the error and show it
-		CAN_GetErrorText(result, 0, strMsg);
-        cout << strMsg << endl;
+    if (!ResetPCANDevice(pcan_usb_bus)) {
         return false;
-	}
-	else {
-        cout << "PCAN-USB " << GetUsbBusNumber(pcan_usb_bus) << " was reset" << endl;
     }
 
-
     return true;
+
+	// Clear receive and transmit buffer
+	//result = CAN_Reset(pcan_usb_bus);
+	//if(result != PCAN_ERROR_OK)
+	//{
+	//	// An error occurred, get a text describing the error and show it
+	//	CAN_GetErrorText(result, 0, strMsg);
+ //       cout << "PCAN-USB " << GetUsbBusNumber(pcan_usb_bus) << " could not be reset" << endl;
+ //       cout << strMsg << endl;
+ //       return false;
+	//}
+	//else {
+ //       cout << "PCAN-USB " << GetUsbBusNumber(pcan_usb_bus) << " was reset" << endl;
+ //   }
+
+
+ //   return true;
 }
 
 bool PCANBasicWrapper::InitializeByDeviceId(int pcan_device_id, int pcan_baud_rate) {
 
+    DWORD result;
+    int buffer;
+    //int pcan_usb_bus;
+    std::map<int, int> usb_bus_pcan_id_mapping;
+    //vector<int> usb_bus_pcan_device_id_mapping;
+
+    // Search for device ID
+    bool is_device_id_found = false;
+    for (auto usb_bus : usb_bus_list_) {
+        if (CAN_Initialize(usb_bus, pcan_baud_rate, 0, 0, 0) == PCAN_ERROR_OK) {
+            // usb_bus is available
+            if (CAN_GetValue(usb_bus, PCAN_DEVICE_ID, &buffer, sizeof(buffer)) == PCAN_ERROR_OK) {
+                // pcan id was read
+                usb_bus_pcan_id_mapping.insert(std::pair<int, int>(usb_bus, buffer));
+                //cout << "PCAN USB Device ID: 0x" << std::hex << buffer << endl;
+                if (buffer == pcan_device_id) {
+                    is_device_id_found = true;
+                    pcan_usb_bus_ = usb_bus;
+                    cout << "PCAN-USB Device ID 0x" << std::hex << buffer << " was initialized" << endl;
+                    break;
+                }
+            }
+        }
+    }
+    if (!is_device_id_found) {
+        cout << "Could not find PCAN Device ID 0x" << std::hex << pcan_device_id << endl;
+        return false;
+    }
+    // usb_bus_list_
+
     // Read all buffered messages from other USB2CAN Dongles
     PurgeExternalFrameBuffer();
+
+    if (!ResetPCANDevice(pcan_usb_bus_)) {
+        return false;
+    }
 
     return true;
 }
@@ -194,8 +237,33 @@ void PCANBasicWrapper::PurgeExternalFrameBuffer() {
 
     while (CAN_Read(pcan_usb_bus_, &pcan_msg, &timestamp) == PCAN_ERROR_OK) {
         // do nothing
-        cnt++;
+        //cnt++;
+        
+        if (cnt++%5 == 0)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
     cout << "Purged " << cnt << " messages" << endl;
+}
+
+bool PCANBasicWrapper::ResetPCANDevice(int pcan_usb_bus) {
+
+    TPCANStatus result;
+    char strMsg[256];
+
+	// Clear receive and transmit buffer
+	result = CAN_Reset(pcan_usb_bus);
+	if(result != PCAN_ERROR_OK)
+	{
+		// An error occurred, get a text describing the error and show it
+		CAN_GetErrorText(result, 0, strMsg);
+        cout << "PCAN-USB " << GetUsbBusNumber(pcan_usb_bus) << " could not be reset" << endl;
+        cout << strMsg << endl;
+        return false;
+	}
+	else {
+        cout << "PCAN-USB " << GetUsbBusNumber(pcan_usb_bus) << " was reset" << endl;
+    }
+
+    return true;
 }

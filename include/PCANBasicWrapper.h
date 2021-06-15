@@ -48,6 +48,7 @@ private:
 
     int GetUsbBusNumber(int pcan_usb_bus);
     void PurgeExternalFrameBuffer();
+    bool ResetPCANDevice(int pcan_usb_bus);
 
 
 

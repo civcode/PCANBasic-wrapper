@@ -19,6 +19,11 @@ int main() {
         return 0;
     }
 
+    //if (!pcan.InitializeByDeviceId(0xf0, PCAN_BAUD_250K)) {
+    //    cout << "Could not initialize PCAN-USB" << endl;
+    //    return 0;
+    //}
+
     std::thread worker(PCANBasicWrapper::worker, &pcan);
 
     while(!loop_timer.is_expired()) {
