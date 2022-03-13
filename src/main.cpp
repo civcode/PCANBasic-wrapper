@@ -14,19 +14,22 @@ int main() {
 
     pcan.SearchForDevices();
 
-    if (!pcan.InitializeByUsbBus(PCAN_USBBUS1, PCAN_BAUD_250K)) {
-        cout << "Could not initialize PCAN-USB" << endl;
-        return 0;
+    if (true) {
+        if (!pcan.InitializeByUsbBus(PCAN_USBBUS1, PCAN_BAUD_250K)) {
+            cout << "Could not initialize PCAN-USB" << endl;
+            return 0;
+        }
+    } else {
+        if (!pcan.InitializeByDeviceId(0xf0, PCAN_BAUD_500K)) {
+            cout << "Could not initialize PCAN-USB" << endl;
+            return 0;
+        }
     }
-
-    //if (!pcan.InitializeByDeviceId(0xf0, PCAN_BAUD_250K)) {
-    //    cout << "Could not initialize PCAN-USB" << endl;
-    //    return 0;
-    //}
 
     std::thread worker(PCANBasicWrapper::worker, &pcan);
 
-    while(!loop_timer.is_expired()) {
+    //while(!loop_timer.is_expired()) {
+    while(true) {
         
         PCANBasicWrapper::can_msg msg = {
             .id = 0x18FFA017,
@@ -39,7 +42,7 @@ int main() {
         //PCANBasicWrapper::can_msg msg_rx;
         //pcan.Read(&msg_rx);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
     }
 
     cout << "stopping worker therad" << endl;

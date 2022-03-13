@@ -41,30 +41,13 @@ bool PCANBasicWrapper::InitializeByUsbBus(int pcan_usb_bus, int pcan_baud_rate) 
     } 
 	
     // Read all buffered messages from other USB2CAN Dongles
-    PurgeExternalFrameBuffer();
+    PurgeExternalFrameBuffers();
 
     if (!ResetPCANDevice(pcan_usb_bus)) {
         return false;
     }
 
     return true;
-
-	// Clear receive and transmit buffer
-	//result = CAN_Reset(pcan_usb_bus);
-	//if(result != PCAN_ERROR_OK)
-	//{
-	//	// An error occurred, get a text describing the error and show it
-	//	CAN_GetErrorText(result, 0, strMsg);
- //       cout << "PCAN-USB " << GetUsbBusNumber(pcan_usb_bus) << " could not be reset" << endl;
- //       cout << strMsg << endl;
- //       return false;
-	//}
-	//else {
- //       cout << "PCAN-USB " << GetUsbBusNumber(pcan_usb_bus) << " was reset" << endl;
- //   }
-
-
- //   return true;
 }
 
 bool PCANBasicWrapper::InitializeByDeviceId(int pcan_device_id, int pcan_baud_rate) {
@@ -97,10 +80,9 @@ bool PCANBasicWrapper::InitializeByDeviceId(int pcan_device_id, int pcan_baud_ra
         cout << "Could not find PCAN Device ID 0x" << std::hex << pcan_device_id << endl;
         return false;
     }
-    // usb_bus_list_
 
     // Read all buffered messages from other USB2CAN Dongles
-    PurgeExternalFrameBuffer();
+    PurgeExternalFrameBuffers();
 
     if (!ResetPCANDevice(pcan_usb_bus_)) {
         return false;
@@ -180,7 +162,7 @@ void PCANBasicWrapper::worker() {
         PCANBasicWrapper::can_msg msg_rx;
         Read(&msg_rx);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
         //if (!is_worker_running_) {
         //    cout << "here" << endl;
@@ -204,7 +186,7 @@ void PCANBasicWrapper::SearchForDevices() {
 
     for (auto it=usb_bus_list_.begin(); it!=usb_bus_list_.end(); ++it) {
         int idx = std::distance(usb_bus_list_.begin(), it);
-        if (CAN_Initialize(*it, PCAN_DONGLE_BAUD_RATE, 0, 0, 0) == PCAN_ERROR_OK) {
+        if (CAN_Initialize(*it, PCAN_BAUD_250K, 0, 0, 0) == PCAN_ERROR_OK) {
             if (CAN_GetValue(*it, PCAN_DEVICE_ID, &buffer, sizeof(buffer)) == PCAN_ERROR_OK) {
                 cout << "Channel " << idx << ": " << "Device Id: 0x" << std::hex << buffer << endl;
             } 
@@ -225,7 +207,7 @@ int PCANBasicWrapper::GetUsbBusNumber(int pcan_usb_bus) {
     return bus_number;
 }
 
-void PCANBasicWrapper::PurgeExternalFrameBuffer() {
+void PCANBasicWrapper::PurgeExternalFrameBuffers() {
     TPCANMsg pcan_msg;
     TPCANTimestamp timestamp;
     TPCANStatus result;

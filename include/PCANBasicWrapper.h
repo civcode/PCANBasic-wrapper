@@ -8,8 +8,9 @@
 
 using std::vector;
 
-#define PCAN_DONGLE_DEVICE_ID (0x21)
-#define PCAN_DONGLE_BAUD_RATE PCAN_BAUD_250K
+//#define PCAN_DONGLE_DEVICE_ID (0x21)
+//#define PCAN_DONGLE_BAUD_RATE PCAN_BAUD_250K
+//#define PCAN_DONGLE_BAUD_RATE PCAN_BAUD_500K
 
 class PCANBasicWrapper {
 
@@ -47,7 +48,7 @@ private:
                                     PCAN_USBBUS5, PCAN_USBBUS6};
 
     int GetUsbBusNumber(int pcan_usb_bus);
-    void PurgeExternalFrameBuffer();
+    void PurgeExternalFrameBuffers();
     bool ResetPCANDevice(int pcan_usb_bus);
 
 
